@@ -13,7 +13,7 @@ from django.test import SimpleTestCase
 class CommandTest(SimpleTestCase):
     """Test commands."""
     def test_wait_for_db_ready(self, patched_check):
-        "If database is ready"
+        """If database is ready."""
 
         patched_check.return_value = True
 
@@ -23,7 +23,7 @@ class CommandTest(SimpleTestCase):
 
     @patch('time.sleep')
     def test_wait_for_db_not_ready(self, patched_sleep, patched_check):
-        "If database is not ready"
+        """If database is not ready."""
 
         patched_check.side_effect = [Psycopg2Error] * 2 + \
                                     [OperationalError] * 2 + [True]
