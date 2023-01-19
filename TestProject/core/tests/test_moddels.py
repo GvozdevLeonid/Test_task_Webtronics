@@ -4,6 +4,7 @@ Test Models.
 
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from core import models
 
 
 class ModelTests(TestCase):
@@ -57,3 +58,23 @@ class ModelTests(TestCase):
 
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.is_staff)
+
+    def test_create_recipe(self):
+        """Test create a new recipe."""
+        user_data = {
+            'email': 'test@example.com',
+            'name': 'test',
+            'password': 'password',
+        }
+
+        user = get_user_model().objects.create_user(**user_data)
+
+        recipe = models.Recipe.objects.create(
+                user=user,
+                title='Title',
+                time_minutes=5,
+                price=5.5,
+                description="description",
+        )
+
+        self.assertEqual(str(recipe), recipe.title)
