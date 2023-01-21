@@ -9,9 +9,14 @@ from rest_framework import (
 from recipe.serializers import (
     RecipeSerializer,
     RecipeDetailSerializer,
+    TagSerializer,
 )
 
-from core.models import Recipe
+from core.models import (
+    Recipe,
+    Tag,
+)
+
 
 class RecipeViewSet(viewsets.ModelViewSet):
     """View for manage Recipe APIs."""
@@ -33,4 +38,20 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """Create a new Recipe"""
+        serializer.save(user=self.request.user)
+
+
+class TagViewSet(viewsets.ModelViewSet):
+    """View for manage Tags APIs."""
+    serializer_class = TagSerializer
+    queryset = Tag.objects.all()
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """Retrieve tags for authenticated user."""
+        return self.queryset.filter(user=self.request.user).order_by('name')
+
+    def perform_create(self, serializer):
+        """Create a new Tag"""
         serializer.save(user=self.request.user)

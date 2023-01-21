@@ -8,16 +8,27 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
 
-from core.models import Recipe
+from core.models import (
+    Recipe,
+    Tag,
+)
 from recipe.serializers import (
     RecipeSerializer,
     RecipeDetailSerializer,
+    TagSerializer,
 )
+
 
 RECIPE_URL = reverse('recipe:recipe-list')
 
+
 def detail_recipe_url(recipe_id):
-    return reverse(f"recipe:recipe-detail", args=[recipe_id])
+    return reverse("recipe:recipe-detail", args=[recipe_id])
+
+
+def create_tag(user, name='tag'):
+    return Tag.objects.create(user=user, name=name)
+
 
 def create_recipe(user, **kw):
     default_values = {
@@ -30,6 +41,7 @@ def create_recipe(user, **kw):
     default_values.update(kw)
 
     return Recipe.objects.create(user=user, **default_values)
+
 
 class PublicRecipeAPITests(TestCase):
     def setUp(self):
@@ -55,7 +67,6 @@ class PublicRecipeAPITests(TestCase):
         res = self.client.post(RECIPE_URL, payload)
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
-
 
 
 class PrivateRecipeAPITests(TestCase):
@@ -181,9 +192,12 @@ class PrivateRecipeAPITests(TestCase):
 
         recipe = create_recipe(self.user)
 
-        res = self.client.patch(detail_recipe_url(recipe.id), {'user': second_user.id})
+        res = self.client.patch(detail_recipe_url(recipe.id),
+                                {'user': second_user.id},
+                                )
         recipe.refresh_from_db()
 
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(recipe.user, self.user)
 
     def test_delete_recipe(self):
@@ -209,3 +223,58 @@ class PrivateRecipeAPITests(TestCase):
 
         self.assertEquals(res.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(Recipe.objects.filter(id=recipe.id).exists())
+
+    def test_add_tags_to_recipe(self):
+        """Test add some tags."""
+
+        recipe = create_recipe(self.user)
+        tag1 = create_tag(user=self.user, name='WWW')
+        tag2 = create_tag(user=self.user, name='AAA')
+
+        tags = Tag.objects.all().order_by("id")
+        serializer = TagSerializer(tags, many=True)
+
+        payload = {
+            'tags': [
+                {'name': tag1.name},
+                {'name': tag2.name},
+            ]
+        }
+
+        res = self.client.patch(detail_recipe_url(recipe.id),
+                                payload,
+                                format='json',
+                                )
+
+        recipe.refresh_from_db()
+
+        self.assertEquals(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['tags'], serializer.data)
+
+    def test_add_and_create_tags_to_recipe(self):
+        """Test add and create some tags."""
+
+        recipe = create_recipe(self.user)
+        tag1 = create_tag(user=self.user, name='WWW')
+        tag2 = create_tag(user=self.user, name='AAA')
+
+        tags = Tag.objects.all().order_by("id")
+        serializer = TagSerializer(tags, many=True)
+
+        payload = {
+            'tags': [
+                {'name': tag1.name},
+                {'name': tag2.name},
+                {'name': 'KKK'},
+            ]
+        }
+
+        res = self.client.patch(detail_recipe_url(recipe.id),
+                                payload,
+                                format='json',
+                                )
+
+        recipe.refresh_from_db()
+
+        self.assertEquals(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['tags'], serializer.data)
