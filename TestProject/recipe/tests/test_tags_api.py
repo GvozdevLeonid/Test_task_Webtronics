@@ -171,3 +171,21 @@ class PrivateTagApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(tag.user, self.user)
+    def test_filter_tags_assigned_to_recipes(self):
+        """Test listing ingredients by those assigned to recipes."""
+
+        tag1 = create_tag(self.user, name='tag1')
+        tag2 = create_tag(self.user, name='tag2')
+
+        recipe = create_recipe(self.user)
+        recipe.tags.add(tag1)
+
+        params = {'assigned_only': 1}
+        res = self.client.get(TAGS_URL, params)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        st1 = TagSerializer(tag1)
+        st2 = TagSerializer(tag2)
+        self.assertIn(st1.data, res.data)
+        self.assertNotIn(st2.data, res.data)

@@ -41,7 +41,13 @@ class AdminUser(BaseUserAdmin):
         }),
     )
 
+class AdminRecipe(admin.ModelAdmin):
+    ordering = ['id']
+    list_display = ['title', 'time_minutes', 'price', 'user']
+    search_fields = ["title", "user"]
+
 
 admin.site.register(models.User, AdminUser)
 admin.site.register(models.Recipe)
 admin.site.register(models.Tag)
+admin.site.register(models.Ingredient)
